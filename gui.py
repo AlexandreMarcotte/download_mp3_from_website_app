@@ -3,7 +3,7 @@ from tkinter import messagebox, scrolledtext
 import sys
 import threading
 from downloader import MP3Downloader
-import validators  # This is a separate package you can use to validate URLs (pip install validators)
+#import validators  # This is a separate package you can use to validate URLs (pip install validators)
 
 class TextRedirector:
     def __init__(self, text_widget):
@@ -58,9 +58,9 @@ class DownloaderApp:
 
     def fetch_links(self):
         url = self.url_entry.get()
-        if not url or not validators.url(url):
-            messagebox.showerror("Error", "Please enter a valid URL.")
-            return
+        # if not url or not validators.url(url):
+        #     messagebox.showerror("Error", "Please enter a valid URL.")
+        #     return
 
         # Disable buttons while fetching
         self.disable_buttons()
