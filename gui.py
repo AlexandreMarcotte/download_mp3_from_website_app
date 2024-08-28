@@ -1,14 +1,11 @@
-# gui.py
 import tkinter as tk
 from tkinter import messagebox, scrolledtext
 import sys
-from downloader import MP3Downloader
 import threading
+from downloader import MP3Downloader
+import validators  # This is a separate package you can use to validate URLs (pip install validators)
 
 class TextRedirector:
-    """
-    Redirects output to a tkinter Text widget.
-    """
     def __init__(self, text_widget):
         self.text_widget = text_widget
 
@@ -17,7 +14,7 @@ class TextRedirector:
         self.text_widget.see(tk.END)  # Auto-scroll to the bottom
 
     def flush(self):
-        pass  # Needed to be compliant with sys.stdout and sys.stderr
+        pass  # Needed for stdout and stderr compatibility
 
 
 class DownloaderApp:
@@ -41,6 +38,9 @@ class DownloaderApp:
         self.download_button = tk.Button(root, text="Download All MP3s", command=self.download_mp3s)
         self.download_button.pack()
 
+        self.clear_button = tk.Button(root, text="Clear Output", command=self.clear_output)
+        self.clear_button.pack()
+
         # Output Text Box
         self.output_text = scrolledtext.ScrolledText(root, wrap=tk.WORD, height=10, width=80)
         self.output_text.pack(padx=10, pady=10)
@@ -58,9 +58,12 @@ class DownloaderApp:
 
     def fetch_links(self):
         url = self.url_entry.get()
-        if not url:
+        if not url or not validators.url(url):
             messagebox.showerror("Error", "Please enter a valid URL.")
             return
+
+        # Disable buttons while fetching
+        self.disable_buttons()
 
         # Run the process in a separate thread to avoid blocking the UI
         threading.Thread(target=self._fetch_links_thread, args=(url,)).start()
@@ -75,11 +78,16 @@ class DownloaderApp:
         except Exception as e:
             messagebox.showerror("Error", f"Failed to fetch MP3 links: {e}")
             print(f"Error: {e}")
+        finally:
+            self.enable_buttons()
 
     def get_total_size(self):
         if not self.downloader or not self.downloader.mp3_links_dict:
             messagebox.showerror("Error", "No MP3 links available. Please fetch links first.")
             return
+
+        # Disable buttons while calculating size
+        self.disable_buttons()
 
         # Run the process in a separate thread to avoid blocking the UI
         threading.Thread(target=self._get_total_size_thread).start()
@@ -92,11 +100,16 @@ class DownloaderApp:
         except Exception as e:
             messagebox.showerror("Error", f"Failed to calculate total size: {e}")
             print(f"Error: {e}")
+        finally:
+            self.enable_buttons()
 
     def download_mp3s(self):
         if not self.downloader or not self.downloader.mp3_links_dict:
             messagebox.showerror("Error", "No MP3 links available. Please fetch links first.")
             return
+
+        # Disable buttons while downloading
+        self.disable_buttons()
 
         # Run the process in a separate thread to avoid blocking the UI
         threading.Thread(target=self._download_mp3s_thread).start()
@@ -109,6 +122,24 @@ class DownloaderApp:
         except Exception as e:
             messagebox.showerror("Error", f"Failed to download MP3s: {e}")
             print(f"Error: {e}")
+        finally:
+            self.enable_buttons()
+
+    def clear_output(self):
+        """Clears the output in the text widget."""
+        self.output_text.delete(1.0, tk.END)
+
+    def disable_buttons(self):
+        """Disables buttons to prevent multiple operations at once."""
+        self.fetch_button.config(state=tk.DISABLED)
+        self.size_button.config(state=tk.DISABLED)
+        self.download_button.config(state=tk.DISABLED)
+
+    def enable_buttons(self):
+        """Enables buttons after an operation is complete."""
+        self.fetch_button.config(state=tk.NORMAL)
+        self.size_button.config(state=tk.NORMAL)
+        self.download_button.config(state=tk.NORMAL)
 
 
 if __name__ == "__main__":
